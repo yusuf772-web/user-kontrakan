@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Memuat html2pdf.js untuk fitur unduh invoice -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
@@ -95,6 +97,9 @@
 
             <!-- Halaman Riwayat (Template) -->
             <div id="history-page" class="hidden"></div>
+            
+            <!-- Halaman Invoice (Template) -->
+            <div id="invoice-page" class="hidden"></div>
 
             <!-- Indikator Loading -->
             <div id="loading-indicator" class="hidden text-center">
@@ -160,6 +165,7 @@
             const paymentPage = document.getElementById('payment-page');
             const paymentCodePage = document.getElementById('payment-code-page');
             const historyPage = document.getElementById('history-page');
+            const invoicePage = document.getElementById('invoice-page');
             const loadingIndicator = document.getElementById('loading-indicator');
             const notification = document.getElementById('notification');
             const notificationMessage = document.getElementById('notification-message');
@@ -180,6 +186,7 @@
                 paymentPage.classList.add('hidden');
                 paymentCodePage.classList.add('hidden');
                 historyPage.classList.add('hidden');
+                invoicePage.classList.add('hidden');
                 loadingIndicator.classList.add('hidden');
                 
                 if (pageToShow) {
@@ -582,14 +589,19 @@
                     const { paymentHistory = [] } = userData;
                     listHTML = paymentHistory.length > 0 ? paymentHistory
                         .sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate())
-                        .map(item => `
+                        .map((item, index) => `
                             <div class="bg-gray-700/50 p-4 rounded-lg">
-                                <div class="flex justify-between items-center">
-                                    <p class="font-bold text-cyan-400">${formatRupiah(item.amount)}</p>
-                                    <span class="text-xs text-gray-400">${formatTimestamp(item.paidAt)}</span>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-bold text-cyan-400">${formatRupiah(item.amount)}</p>
+                                        <p class="text-sm mt-1">Pembayaran untuk bulan: ${item.months.join(', ').replace(/-/g, ' ')}</p>
+                                        <p class="text-xs text-gray-500 mt-1">Metode: ${item.method}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs text-gray-400">${formatTimestamp(item.paidAt)}</span>
+                                        <button class="view-invoice-btn text-xs text-cyan-400 hover:underline mt-1 block ml-auto" data-index="${index}">Lihat Invoice</button>
+                                    </div>
                                 </div>
-                                <p class="text-sm mt-1">Pembayaran untuk bulan: ${item.months.join(', ').replace(/-/g, ' ')}</p>
-                                <p class="text-xs text-gray-500 mt-1">Metode: ${item.method}</p>
                             </div>
                         `).join('') : '<p class="text-center text-gray-500">Belum ada riwayat pembayaran.</p>';
                 } else {
@@ -625,6 +637,88 @@
                 document.getElementById('back-to-dashboard-from-history').addEventListener('click', () => {
                     showPage(dashboardPage);
                 });
+
+                if (type === 'payment') {
+                    document.querySelectorAll('.view-invoice-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            const paymentRecord = userData.paymentHistory.sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate())[index];
+                            buildInvoiceUI(userData, paymentRecord);
+                        });
+                    });
+                }
+            }
+
+            function buildInvoiceUI(userData, paymentRecord) {
+                const invoiceNumber = `INV-${paymentRecord.paidAt.toDate().getTime()}`;
+                invoicePage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                        <div id="invoice-content" class="bg-white text-gray-800 p-8 rounded-lg">
+                            <div class="flex justify-between items-center pb-4 border-b">
+                                <h2 class="text-2xl font-bold text-gray-900">INVOICE</h2>
+                                <span class="font-semibold">Kontrakan Sejahtera</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-6">
+                                <div>
+                                    <p class="text-sm text-gray-500">Ditagihkan kepada:</p>
+                                    <p class="font-bold">${userData.name}</p>
+                                    <p>${userData.contractId}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-500">Nomor Invoice:</p>
+                                    <p class="font-bold">${invoiceNumber}</p>
+                                    <p class="text-sm text-gray-500 mt-2">Tanggal Pembayaran:</p>
+                                    <p class="font-bold">${formatTimestamp(paymentRecord.paidAt)}</p>
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="p-2">Deskripsi</th>
+                                            <th class="p-2 text-right">Jumlah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-b">Pembayaran untuk bulan: ${paymentRecord.months.join(', ').replace(/-/g, ' ')}</td>
+                                            <td class="p-2 border-b text-right">${formatRupiah(paymentRecord.amount)}</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="font-bold">
+                                            <td class="p-2 text-right">Total</td>
+                                            <td class="p-2 text-right">${formatRupiah(paymentRecord.amount)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="mt-8 text-center">
+                                <p class="font-bold text-green-600 text-xl">LUNAS</p>
+                                <p class="text-xs text-gray-500 mt-2">Terima kasih atas pembayaran Anda.</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex space-x-3">
+                            <button id="download-invoice-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg">Unduh PDF</button>
+                            <button id="back-to-history-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Kembali</button>
+                        </div>
+                    </div>
+                `;
+                showPage(invoicePage);
+
+                document.getElementById('download-invoice-btn').addEventListener('click', () => {
+                    const element = document.getElementById('invoice-content');
+                    const opt = {
+                      margin:       1,
+                      filename:     `invoice-${invoiceNumber}.pdf`,
+                      image:        { type: 'jpeg', quality: 0.98 },
+                      html2canvas:  { scale: 2 },
+                      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                    };
+                    html2pdf().set(opt).from(element).save();
+                });
+
+                document.getElementById('back-to-history-btn').addEventListener('click', () => buildHistoryUI(userData, 'payment'));
             }
         }
     </script>
