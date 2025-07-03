@@ -43,7 +43,12 @@
                     <form id="login-form" class="flex-grow flex flex-col">
                         <div class="mb-4">
                             <label for="login-contract-id" class="block mb-2 text-sm font-medium text-gray-300">ID Kontrakan</label>
-                            <input type="text" id="login-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-3.5" placeholder="Masukkan ID Kontrakan Anda" required>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 text-sm text-gray-400 bg-gray-600 border border-r-0 border-gray-600 rounded-l-md">
+                                    KTR-
+                                </span>
+                                <input type="text" id="login-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-none rounded-r-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-3.5" placeholder="001" required>
+                            </div>
                         </div>
                         <div class="mb-6">
                             <label for="login-password" class="block mb-2 text-sm font-medium text-gray-300">Password</label>
@@ -68,7 +73,12 @@
                         </div>
                         <div class="mb-4">
                             <label for="signup-contract-id" class="block mb-2 text-sm font-medium text-gray-300">ID Kontrakan</label>
-                            <input type="text" id="signup-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-3.5" placeholder="Pastikan ID ini unik" required>
+                             <div class="flex">
+                                <span class="inline-flex items-center px-3 text-sm text-gray-400 bg-gray-600 border border-r-0 border-gray-600 rounded-l-md">
+                                    KTR-
+                                </span>
+                                <input type="text" id="signup-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-none rounded-r-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-3.5" placeholder="Buat ID unik Anda" required>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label for="signup-date" class="block mb-2 text-sm font-medium text-gray-300">Tanggal Mendaftar</label>
@@ -278,7 +288,8 @@
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 showLoading();
-                const contractId = loginForm['login-contract-id'].value;
+                const contractIdValue = loginForm['login-contract-id'].value.trim();
+                const contractId = "KTR-" + contractIdValue;
                 const password = loginForm['login-password'].value;
 
                 try {
@@ -300,7 +311,8 @@
                 e.preventDefault();
                 showLoading();
                 const name = signupForm['signup-name'].value;
-                const contractId = signupForm['signup-contract-id'].value.trim();
+                const contractIdValue = signupForm['signup-contract-id'].value.trim();
+                const contractId = "KTR-" + contractIdValue;
                 const password = signupForm['signup-password'].value;
                 const registrationDate = signupForm['signup-date'].value;
                 const email = `${contractId.toLowerCase().replace(/\s/g, '')}@kontrakan.app`;
