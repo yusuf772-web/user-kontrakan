@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layanan Pembayaran Kontrakan</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Font Inter dari Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Memuat html2pdf.js untuk fitur unduh invoice -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .list-container::-webkit-scrollbar { width: 8px; }
+        .list-container::-webkit-scrollbar-track { background: transparent; }
+        .list-container::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 20px; border: 2px solid #1f2937; }
+        .list-container::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white antialiased">
+
+    <!-- Kontainer Utama -->
+    <div id="app-container" class="container mx-auto p-4 md:p-8 min-h-screen flex items-center justify-center">
+        
+        <div id="main-content" class="w-full max-w-md">
+            
+            <!-- Halaman Autentikasi (Login/Daftar) -->
+            <div id="auth-page" class="hidden">
+                <div id="login-view" class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                    <div class="mb-8 text-center">
+                        <h1 class="text-3xl font-bold text-cyan-400">Selamat Datang</h1>
+                        <p class="text-gray-400">Masuk untuk melanjutkan</p>
+                    </div>
+                    <form id="login-form" class="flex-grow flex flex-col">
+                        <div class="mb-4">
+                            <label for="login-contract-id" class="block mb-2 text-sm font-medium text-gray-300">ID Kontrakan</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 text-sm text-gray-400 bg-gray-600 border border-r-0 border-gray-600 rounded-l-md">
+                                    KTR-
+                                </span>
+                                <input type="text" id="login-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-none rounded-r-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-3.5" placeholder="001" required>
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <label for="login-password" class="block mb-2 text-sm font-medium text-gray-300">Password</label>
+                            <input type="password" id="login-password" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-3.5" required>
+                        </div>
+                        <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 font-medium rounded-lg text-sm px-5 py-3.5">Masuk</button>
+                        <p class="text-center text-xs text-gray-500 mt-6">
+                            Belum punya akun? <button type="button" id="show-signup-button" class="font-medium text-cyan-400 hover:underline">Daftar di sini</button>
+                        </p>
+                    </form>
+                </div>
+
+                <div id="signup-view" class="hidden bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                     <div class="mb-8 text-center">
+                        <h1 class="text-3xl font-bold text-cyan-400">Buat Akun Baru</h1>
+                        <p class="text-gray-400">Isi data di bawah untuk mendaftar</p>
+                    </div>
+                    <form id="signup-form" class="flex-grow flex flex-col">
+                        <div class="mb-4">
+                            <label for="signup-name" class="block mb-2 text-sm font-medium text-gray-300">Nama Lengkap</label>
+                            <input type="text" id="signup-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-3.5" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="signup-contract-id" class="block mb-2 text-sm font-medium text-gray-300">ID Kontrakan</label>
+                             <div class="flex">
+                                <span class="inline-flex items-center px-3 text-sm text-gray-400 bg-gray-600 border border-r-0 border-gray-600 rounded-l-md">
+                                    KTR-
+                                </span>
+                                <input type="text" id="signup-contract-id" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-none rounded-r-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-3.5" placeholder="Buat ID unik Anda" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="signup-date" class="block mb-2 text-sm font-medium text-gray-300">Tanggal Mendaftar</label>
+                            <input type="date" id="signup-date" class="bg-gray-600 border-gray-500 text-gray-400 text-sm rounded-lg w-full p-3.5" readonly>
+                        </div>
+                        <div class="mb-6">
+                            <label for="signup-password" class="block mb-2 text-sm font-medium text-gray-300">Password</label>
+                            <input type="password" id="signup-password" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-3.5" required>
+                        </div>
+                        <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 font-medium rounded-lg text-sm px-5 py-3.5">Daftar</button>
+                        <p class="text-center text-xs text-gray-500 mt-4">
+                            Sudah punya akun? <button type="button" id="show-login-button" class="font-medium text-cyan-400 hover:underline">Masuk di sini</button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Halaman Dasbor Pengguna (Template) -->
+            <div id="dashboard-page" class="hidden"></div>
+            
+            <!-- Halaman Pembayaran (Template) -->
+            <div id="payment-page" class="hidden"></div>
+            
+            <!-- Halaman Kode Pembayaran (Template) -->
+            <div id="payment-code-page" class="hidden"></div>
+
+            <!-- Halaman Riwayat (Template) -->
+            <div id="history-page" class="hidden"></div>
+            
+            <!-- Halaman Invoice (Template) -->
+            <div id="invoice-page" class="hidden"></div>
+
+            <!-- Indikator Loading -->
+            <div id="loading-indicator" class="hidden text-center">
+                <svg class="animate-spin h-8 w-8 text-cyan-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-400">Memuat...</p>
+            </div>
+
+            <!-- Notifikasi -->
+            <div id="notification" class="hidden fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg z-50">
+                <p id="notification-message"></p>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Peringatan Konfigurasi -->
+    <div id="config-warning" class="hidden fixed inset-0 bg-gray-900 bg-opacity-95 flex items-center justify-center z-50 p-4">
+        <div class="text-center bg-gray-800 p-8 rounded-2xl shadow-lg max-w-lg border border-red-500">
+            <h2 class="text-2xl font-bold text-red-500 mb-4">Konfigurasi Firebase Diperlukan</h2>
+            <p class="text-gray-300 mb-2">Aplikasi ini belum bisa dijalankan karena konfigurasi Firebase belum diatur.</p>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- KONFIGURASI FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdh3nYWA1E_G4o8JcC89481bnThCIc038",
+            authDomain: "kontrakan-92690.firebaseapp.com",
+            projectId: "kontrakan-92690",
+            storageBucket: "kontrakan-92690.appspot.com",
+            messagingSenderId: "48507829301",
+            appId: "1:48507829301:web:d88a6c59533eb92d57c57c",
+            measurementId: "G-KSL4T28GG3"
+        };
+
+        // --- VALIDASI KONFIGURASI ---
+        if (firebaseConfig.apiKey.startsWith("GANTI_DENGAN")) {
+            document.getElementById('config-warning').classList.remove('hidden');
+        } else {
+            initializeAppAndRun();
+        }
+
+        function initializeAppAndRun() {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            // --- REFERENSI ELEMEN DOM ---
+            const mainContent = document.getElementById('main-content');
+            const authPage = document.getElementById('auth-page');
+            const loginView = document.getElementById('login-view');
+            const signupView = document.getElementById('signup-view');
+            const dashboardPage = document.getElementById('dashboard-page');
+            const paymentPage = document.getElementById('payment-page');
+            const paymentCodePage = document.getElementById('payment-code-page');
+            const historyPage = document.getElementById('history-page');
+            const invoicePage = document.getElementById('invoice-page');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.getElementById('notification-message');
+
+            const showSignupButton = document.getElementById('show-signup-button');
+            const showLoginButton = document.getElementById('show-login-button');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            
+            const baseRent = 550000;
+            const oneMonthTotal = baseRent + 10000;
+            let unsubscribeUserListener = null;
+
+            // --- FUNGSI UI ---
+            function showPage(pageToShow) {
+                authPage.classList.add('hidden');
+                dashboardPage.classList.add('hidden');
+                paymentPage.classList.add('hidden');
+                paymentCodePage.classList.add('hidden');
+                historyPage.classList.add('hidden');
+                invoicePage.classList.add('hidden');
+                loadingIndicator.classList.add('hidden');
+                
+                if (pageToShow) {
+                    pageToShow.classList.remove('hidden');
+                    pageToShow.classList.add('fade-in');
+                }
+            }
+            
+            function showLoading() {
+                showPage(null);
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            function showNotification(message, isError = false) {
+                notificationMessage.textContent = message;
+                notification.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg z-50 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+                notification.classList.remove('hidden');
+                setTimeout(() => { notification.classList.add('hidden'); }, 3000);
+            }
+
+            function formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            }
+            
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+            
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return 'Tidak ada';
+                return timestamp.toDate().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+            }
+
+            showSignupButton.addEventListener('click', () => {
+                loginView.classList.add('hidden');
+                signupView.classList.remove('hidden');
+                signupView.classList.add('fade-in');
+                const signupDateInput = document.getElementById('signup-date');
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                signupDateInput.value = `${year}-${month}-${day}`;
+            });
+
+            showLoginButton.addEventListener('click', () => {
+                signupView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                loginView.classList.add('fade-in');
+            });
+
+            // --- LOGIKA AUTENTIKASI ---
+            onAuthStateChanged(auth, async (user) => {
+                if (unsubscribeUserListener) {
+                    unsubscribeUserListener();
+                }
+
+                if (user) {
+                    showLoading();
+                    const userDocRef = doc(db, "users", user.uid);
+                    
+                    unsubscribeUserListener = onSnapshot(userDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const userData = docSnap.data();
+                            if (userData.isAdmin) {
+                                signOut(auth);
+                            } else {
+                                buildDashboardUI(userData, user.uid);
+                                showPage(dashboardPage);
+                            }
+                        } else {
+                            signOut(auth);
+                        }
+                    }, (error) => {
+                        console.error("Error listening to user data:", error);
+                        showNotification("Gagal memuat data real-time.", true);
+                        signOut(auth);
+                    });
+
+                } else {
+                    showPage(authPage);
+                    loginView.classList.remove('hidden');
+                    signupView.classList.add('hidden');
+                }
+            });
+            
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading();
+                const contractIdValue = loginForm['login-contract-id'].value.trim();
+                const contractId = "KTR-" + contractIdValue;
+                const password = loginForm['login-password'].value;
+
+                try {
+                    const q = query(collection(db, "users"), where("contractId", "==", contractId));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) throw new Error("ID Kontrakan tidak ditemukan.");
+                    
+                    const userData = querySnapshot.docs[0].data();
+                    if (userData.isAdmin) throw new Error("Akun admin tidak bisa login di sini.");
+                    
+                    await signInWithEmailAndPassword(auth, userData.email, password);
+                } catch (error) {
+                    showNotification(error.message || "ID Kontrakan atau password salah.", true);
+                    showPage(authPage);
+                }
+            });
+            
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading();
+                const name = signupForm['signup-name'].value;
+                const contractIdValue = signupForm['signup-contract-id'].value.trim();
+                const contractId = "KTR-" + contractIdValue;
+                const password = signupForm['signup-password'].value;
+                const registrationDate = signupForm['signup-date'].value;
+                const email = `${contractId.toLowerCase().replace(/\s/g, '')}@kontrakan.app`;
+
+                try {
+                    const q = query(collection(db, "users"), where("contractId", "==", contractId));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) throw new Error(`ID Kontrakan "${contractId}" sudah terdaftar.`);
+
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    const initialArrears = calculateInitialArrears(registrationDate);
+
+                    await setDoc(doc(db, "users", user.uid), {
+                        name, contractId, email, registrationDate,
+                        paymentHistory: [],
+                        arrears: initialArrears,
+                        isAdmin: false
+                    });
+                } catch (error) {
+                    showNotification(error.message, true);
+                    showPage(authPage);
+                    signupView.classList.remove('hidden');
+                }
+            });
+
+            // --- LOGIKA PENGGUNA ---
+            function calculateInitialArrears(startDateString) {
+                const arrears = [];
+                const [startYear, startMonth] = startDateString.split('-').map(Number);
+                let loopYear = startYear;
+                let loopMonth = startMonth - 1;
+                const today = new Date();
+                const endYear = today.getFullYear();
+                const endMonth = today.getMonth();
+
+                while (loopYear < endYear || (loopYear === endYear && loopMonth <= endMonth)) {
+                    arrears.push(`${loopYear}-${String(loopMonth + 1).padStart(2, '0')}`);
+                    loopMonth++;
+                    if (loopMonth > 11) {
+                        loopMonth = 0;
+                        loopYear++;
+                    }
+                }
+                return arrears;
+            }
+
+            function buildDashboardUI(userData, uid) {
+                const { name, contractId, arrears = [], registrationDate, adminMessage } = userData;
+                const arrearsCount = arrears.length;
+                const totalBill = arrearsCount * oneMonthTotal;
+                const paymentStatusText = arrearsCount > 0 ? `Tunggakan ${arrearsCount} Bulan` : "Lunas";
+                const paymentStatusColor = arrearsCount > 0 ? "text-orange-400" : "text-green-400";
+                
+                let adminMessageHTML = '';
+                if (adminMessage && adminMessage.text) {
+                    adminMessageHTML = `
+                        <div class="mb-6 bg-yellow-900/50 border border-yellow-600 p-4 rounded-lg">
+                            <h4 class="font-bold text-yellow-400 mb-2">Pesan dari Admin</h4>
+                            <p class="text-sm text-yellow-200 mb-3">${adminMessage.text}</p>
+                            <button id="mark-msg-read" class="text-xs text-yellow-400 hover:underline">Tandai sudah dibaca</button>
+                        </div>
+                    `;
+                }
+
+                dashboardPage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
+                            <div><h2 class="text-2xl font-semibold">${name}</h2><p class="text-sm text-gray-400">ID: ${contractId}</p></div>
+                            <div class="flex items-center space-x-2">
+                                 <div class="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-gray-900 font-bold text-xl">${name.charAt(0).toUpperCase()}</div>
+                                 <button id="logout-button" class="p-2 text-gray-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
+                            </div>
+                        </div>
+                        ${adminMessageHTML}
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-gray-700/50 p-4 rounded-lg"><h3 class="font-semibold text-gray-400 text-sm mb-1">Terdaftar Sejak</h3><p class="font-bold text-green-400 text-base">${formatDate(registrationDate)}</p></div>
+                            <div class="bg-gray-700/50 p-4 rounded-lg"><h3 class="font-semibold text-gray-400 text-sm mb-1">Status Pembayaran</h3><p class="font-bold ${paymentStatusColor} text-lg">${paymentStatusText}</p></div>
+                        </div>
+                        <div class="mb-6 flex-grow">
+                            <h3 class="text-lg font-semibold mb-3">Rincian Tagihan</h3>
+                            <div class="space-y-3 bg-gray-900/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center text-sm"><span class="text-gray-400">Sewa (${arrearsCount} bulan)</span><span class="font-medium">${formatRupiah(arrearsCount * baseRent)}</span></div>
+                                <div class="flex justify-between items-center text-sm"><span class="text-gray-400">Biaya Layanan (${arrearsCount} bulan)</span><span class="font-medium">${formatRupiah(arrearsCount * (oneMonthTotal - baseRent))}</span></div>
+                                <div class="flex justify-between items-center text-sm text-cyan-400 pt-2 border-t border-gray-700"><span class="font-bold">Total</span><span class="font-bold text-xl">${formatRupiah(totalBill)}</span></div>
+                            </div>
+                        </div>
+                        <div class="space-y-3 mt-auto">
+                            <button id="pay-button" class="w-full text-gray-900 bg-cyan-400 hover:bg-cyan-500 font-bold rounded-lg text-sm px-5 py-3.5" ${arrearsCount === 0 ? 'disabled' : ''}>Bayar</button>
+                            <button id="history-button" class="w-full text-cyan-400 bg-transparent border border-cyan-400 hover:bg-cyan-400/10 font-medium rounded-lg text-sm px-5 py-3.5">Riwayat Pembayaran</button>
+                            <button id="info-history-button" class="w-full text-xs text-gray-500 hover:text-cyan-400 pt-2">Riwayat Info dari Admin</button>
+                        </div>
+                    </div>
+                `;
+                
+                if (adminMessage) {
+                    document.getElementById('mark-msg-read').addEventListener('click', async () => {
+                        const userDocRef = doc(db, "users", uid);
+                        await updateDoc(userDocRef, { adminMessage: null });
+                    });
+                }
+                document.getElementById('logout-button').addEventListener('click', async () => { await signOut(auth); });
+                document.getElementById('history-button').addEventListener('click', () => buildHistoryUI(userData, 'payment'));
+                document.getElementById('info-history-button').addEventListener('click', () => buildHistoryUI(userData, 'info'));
+                if (arrearsCount > 0) {
+                    document.getElementById('pay-button').addEventListener('click', () => buildPaymentPageUI(userData));
+                }
+            }
+
+            // --- LOGIKA HALAMAN PEMBAYARAN ---
+            function buildPaymentPageUI(userData) {
+                const { arrears = [] } = userData;
+                const arrearsCount = arrears.length;
+                const totalBill = arrearsCount * oneMonthTotal;
+
+                let partialPaymentHTML = '';
+                if (arrearsCount > 1) {
+                    const monthOptions = arrears.map(month => {
+                        const [year, monthNum] = month.split('-');
+                        const monthName = new Date(year, monthNum - 1).toLocaleString('id-ID', { month: 'long' });
+                        return `<option value="${month}">${monthName} ${year}</option>`;
+                    }).join('');
+                    partialPaymentHTML = `
+                        <div class="mt-6 text-center">
+                            <label for="month-select" class="text-sm text-gray-400 block mb-2">Atau bayar per bulan:</label>
+                            <select id="month-select" class="w-full bg-gray-600 border border-gray-500 text-white text-sm rounded-lg p-2.5">
+                                <option value="all" selected>Bayar Lunas (${formatRupiah(totalBill)})</option>
+                                ${monthOptions}
+                            </select>
+                        </div>
+                    `;
+                }
+
+                paymentPage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
+                            <h2 class="text-2xl font-semibold">Pilih Pembayaran</h2>
+                            <button id="back-to-dashboard-button" class="text-sm text-cyan-400 hover:underline">Kembali</button>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-gray-400">Total Tagihan Dipilih:</p>
+                            <p id="payment-total" class="text-3xl font-bold text-cyan-400">${formatRupiah(totalBill)}</p>
+                        </div>
+                        ${partialPaymentHTML}
+                        <div class="mt-8 space-y-3">
+                            <h3 class="text-lg font-semibold text-center">Pilih Metode</h3>
+                            <button data-method="cash" class="payment-method-btn w-full flex items-center justify-between bg-gray-700 hover:bg-gray-600 p-4 rounded-lg">
+                                <span class="font-semibold">Cash (dengan kode)</span>
+                                <span class="text-cyan-400">&rarr;</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                showPage(paymentPage);
+                attachPaymentPageListeners(userData, totalBill);
+            }
+
+            function attachPaymentPageListeners(userData, currentBill) {
+                let amountToPay = currentBill;
+                let monthsToPay = userData.arrears;
+                const monthSelect = document.getElementById('month-select');
+                const paymentTotal = document.getElementById('payment-total');
+
+                if (monthSelect) {
+                    monthSelect.addEventListener('change', () => {
+                        if (monthSelect.value === 'all') {
+                            amountToPay = userData.arrears.length * oneMonthTotal;
+                            monthsToPay = userData.arrears;
+                        } else {
+                            amountToPay = oneMonthTotal;
+                            monthsToPay = [monthSelect.value];
+                        }
+                        paymentTotal.textContent = formatRupiah(amountToPay);
+                    });
+                }
+                
+                document.querySelectorAll('.payment-method-btn').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const method = button.dataset.method;
+                        buildPaymentCodeUI(amountToPay, monthsToPay, method, userData);
+                    });
+                });
+
+                document.getElementById('back-to-dashboard-button').addEventListener('click', () => {
+                    showPage(dashboardPage);
+                });
+            }
+
+            function buildPaymentCodeUI(amount, months, method, userData) {
+                const instructionsHTML = `
+                    <p class="text-sm text-gray-400 my-4">Minta kode pembayaran dari admin, lalu masukkan di bawah ini untuk konfirmasi.</p>
+                    <form id="cash-code-form">
+                        <input type="text" id="cash-code-input" class="w-full bg-gray-900 border border-gray-600 text-white text-center text-lg tracking-widest rounded-lg p-3" placeholder="Masukkan Kode" required>
+                        <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg mt-4">Konfirmasi Kode</button>
+                    </form>
+                `;
+
+                paymentCodePage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col text-center">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-2xl font-semibold">Pembayaran Cash</h2>
+                            <button id="back-to-payment-method" class="text-sm text-cyan-400 hover:underline">Kembali</button>
+                        </div>
+                        <p class="text-gray-400">Total: <span class="font-bold text-cyan-400">${formatRupiah(amount)}</span></p>
+                        ${instructionsHTML}
+                    </div>
+                `;
+
+                showPage(paymentCodePage);
+                
+                document.getElementById('back-to-payment-method').addEventListener('click', () => buildPaymentPageUI(userData));
+                
+                const cashCodeForm = document.getElementById('cash-code-form');
+                cashCodeForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const enteredCode = document.getElementById('cash-code-input').value;
+                    processPayment(amount, months, method, userData, enteredCode);
+                });
+            }
+            
+            async function processPayment(amount, months, method, userData, enteredCode = null) {
+                showLoading();
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const userDocRef = doc(db, "users", user.uid);
+
+                if (method === 'cash') {
+                    const latestUserData = (await getDoc(userDocRef)).data();
+                    if (!latestUserData.pendingCashPayment || latestUserData.pendingCashPayment.code !== enteredCode) {
+                        showNotification("Kode pembayaran tunai tidak valid atau sudah kedaluwarsa.", true);
+                        showPage(dashboardPage);
+                        return;
+                    }
+                }
+
+                const newPaymentRecord = {
+                    amount,
+                    method,
+                    months,
+                    paidAt: new Date()
+                };
+
+                const newArrears = userData.arrears.filter(month => !months.includes(month));
+
+                try {
+                    await updateDoc(userDocRef, {
+                        arrears: newArrears,
+                        paymentHistory: arrayUnion(newPaymentRecord),
+                        pendingCashPayment: method === 'cash' ? null : userData.pendingCashPayment
+                    });
+                    showNotification("Pembayaran berhasil dicatat!", false);
+                } catch (error) {
+                    showNotification("Gagal memperbarui data pembayaran.", true);
+                    console.error("Payment update error:", error);
+                    showPage(dashboardPage);
+                }
+            }
+            
+            async function buildHistoryUI(userData, type) {
+                showLoading();
+                let title, listHTML;
+
+                if (type === 'payment') {
+                    title = 'Riwayat Pembayaran';
+                    const { paymentHistory = [] } = userData;
+                    listHTML = paymentHistory.length > 0 ? paymentHistory
+                        .sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate())
+                        .map((item, index) => `
+                            <div class="bg-gray-700/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-bold text-cyan-400">${formatRupiah(item.amount)}</p>
+                                        <p class="text-sm mt-1">Pembayaran untuk bulan: ${item.months.join(', ').replace(/-/g, ' ')}</p>
+                                        <p class="text-xs text-gray-500 mt-1">Metode: ${item.method}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs text-gray-400">${formatTimestamp(item.paidAt)}</span>
+                                        <button class="view-invoice-btn text-xs text-cyan-400 hover:underline mt-1 block ml-auto" data-index="${index}">Lihat Invoice</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-center text-gray-500">Belum ada riwayat pembayaran.</p>';
+                } else {
+                    title = 'Riwayat Info dari Admin';
+                    const messageHistoryRef = collection(db, "users", auth.currentUser.uid, "messageHistory");
+                    const q = query(messageHistoryRef, orderBy("sentAt", "desc"));
+                    const querySnapshot = await getDocs(q);
+                    listHTML = querySnapshot.empty
+                        ? '<p class="text-center text-gray-500">Belum ada info dari admin.</p>'
+                        : querySnapshot.docs.map(doc => {
+                            const msg = doc.data();
+                            return `
+                                <div class="bg-gray-700/50 p-3 rounded-lg">
+                                    <p class="text-sm text-gray-200">${msg.text}</p>
+                                    <p class="text-xs text-gray-500 text-right mt-2">${formatTimestamp(msg.sentAt)}</p>
+                                </div>
+                            `;
+                        }).join('');
+                }
+
+                historyPage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
+                            <h2 class="text-2xl font-semibold">${title}</h2>
+                            <button id="back-to-dashboard-from-history" class="text-sm text-cyan-400 hover:underline">Kembali</button>
+                        </div>
+                        <div class="list-container space-y-3 overflow-y-auto max-h-96 pr-2">
+                            ${listHTML}
+                        </div>
+                    </div>
+                `;
+                showPage(historyPage);
+                document.getElementById('back-to-dashboard-from-history').addEventListener('click', () => {
+                    showPage(dashboardPage);
+                });
+
+                if (type === 'payment') {
+                    document.querySelectorAll('.view-invoice-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            const paymentRecord = userData.paymentHistory.sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate())[index];
+                            buildInvoiceUI(userData, paymentRecord);
+                        });
+                    });
+                }
+            }
+
+            function buildInvoiceUI(userData, paymentRecord) {
+                const invoiceNumber = `INV-${paymentRecord.paidAt.toDate().getTime()}`;
+                invoicePage.innerHTML = `
+                    <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700 flex flex-col">
+                        <div id="invoice-content" class="bg-white text-gray-800 p-8 rounded-lg">
+                            <div class="flex justify-between items-center pb-4 border-b">
+                                <h2 class="text-2xl font-bold text-gray-900">INVOICE</h2>
+                                <span class="font-semibold">Kontrakan Sejahtera</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-6">
+                                <div>
+                                    <p class="text-sm text-gray-500">Ditagihkan kepada:</p>
+                                    <p class="font-bold">${userData.name}</p>
+                                    <p>${userData.contractId}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-500">Nomor Invoice:</p>
+                                    <p class="font-bold">${invoiceNumber}</p>
+                                    <p class="text-sm text-gray-500 mt-2">Tanggal Pembayaran:</p>
+                                    <p class="font-bold">${formatTimestamp(paymentRecord.paidAt)}</p>
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="p-2">Deskripsi</th>
+                                            <th class="p-2 text-right">Jumlah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="p-2 border-b">Pembayaran untuk bulan: ${paymentRecord.months.join(', ').replace(/-/g, ' ')}</td>
+                                            <td class="p-2 border-b text-right">${formatRupiah(paymentRecord.amount)}</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="font-bold">
+                                            <td class="p-2 text-right">Total</td>
+                                            <td class="p-2 text-right">${formatRupiah(paymentRecord.amount)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="mt-8 text-center">
+                                <p class="font-bold text-green-600 text-xl">LUNAS</p>
+                                <p class="text-xs text-gray-500 mt-2">Terima kasih atas pembayaran Anda.</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex space-x-3">
+                            <button id="download-invoice-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg">Unduh PDF</button>
+                            <button id="back-to-history-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Kembali</button>
+                        </div>
+                    </div>
+                `;
+                showPage(invoicePage);
+
+                document.getElementById('download-invoice-btn').addEventListener('click', () => {
+                    const element = document.getElementById('invoice-content');
+                    const opt = {
+                      margin:       1,
+                      filename:     `invoice-${invoiceNumber}.pdf`,
+                      image:        { type: 'jpeg', quality: 0.98 },
+                      html2canvas:  { scale: 2 },
+                      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                    };
+                    html2pdf().set(opt).from(element).save();
+                });
+
+                document.getElementById('back-to-history-btn').addEventListener('click', () => buildHistoryUI(userData, 'payment'));
+            }
+        }
+    </script>
+</body>
+</html>
